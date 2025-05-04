@@ -13,5 +13,5 @@ export const createSendToken = (user, res) => {
     secure: process.env.NODE_ENV === "production",
   });
 
-  res.status(200).json({ token, data: user });
+  res.status(200).json({ data: user, token });
 };
