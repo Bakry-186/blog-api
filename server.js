@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import "./config/connect.js"; // Connect with db
 import ApiError from "./utils/apiError.js";
 import globalError from "./middlewares/errorMiddleware.js";
+import authRouter from "./routes/authRoutes.js";
 
 // express app
 const app = express();
@@ -21,6 +22,7 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // Routes
+app.use("/api/v1/auth", authRouter);
 
 app.use(/.*/, (req, res, next) => {
   next(new ApiError(`Can't find this route ${req.originalUrl}`, 404));
