@@ -1,4 +1,5 @@
 import asyncHandler from "express-async-handler";
+import bcrypt from "bcrypt";
 
 import {
   createOne,
@@ -8,6 +9,7 @@ import {
 } from "../utils/factoryHandler.js";
 import User from "../models/userModel.js";
 import ApiError from "../utils/apiError.js";
+import { createSendToken } from "../utils/generateTokens.js";
 
 // @desc Get list of users
 // @route GET /api/v1/users
@@ -43,6 +45,26 @@ export const updateUser = asyncHandler(async (req, res, next) => {
   }
 
   res.status(200).json({ data: user });
+});
+
+// @desc Change password
+// @route PUT /api/v1/users
+// @access Private/Admin
+export const changePassword = asyncHandler(async (req, res, next) => {
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    {
+      password: await bcrypt.hash(req.body.password, 10),
+      passwordChangedAt: Date.now(),
+    },
+    { new: true }
+  );
+
+  if (!user) {
+    return next(new ApiError("User not found!", 404));
+  }
+
+  createSendToken(user, res);
 });
 
 // @desc Delete specific
