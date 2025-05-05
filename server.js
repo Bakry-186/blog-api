@@ -4,6 +4,7 @@ import cors from "cors";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 import "./config/connect.js"; // Connect with db
 import ApiError from "./utils/apiError.js";
@@ -15,15 +16,24 @@ import profileRouter from "./routes/profileRoutes.js";
 // express app
 const app = express();
 
-// Middlewares
+// Global Middlewares
 app.use(helmet());
-app.use(cors());
-app.use(cookieParser());
-app.use(express.json());
 
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
+
+const limiter = rateLimit({
+  max: 100,
+  windowMs: 60 * 60 * 1000, // 60min
+  message: "Too many requests from this IP, please try again in an hour!",
+});
+
+app.use("/api", limiter);
+
+app.use(cors());
+app.use(cookieParser());
+app.use(express.json());
 
 // Routes
 app.use("/api/v1/auth", authRouter);
