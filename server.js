@@ -5,6 +5,8 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import mongoSanitize from "express-mongo-sanitize";
+import xss from "xss-clean";
 
 import "./config/connect.js"; // Connect with db
 import ApiError from "./utils/apiError.js";
@@ -34,6 +36,12 @@ app.use("/api", limiter);
 app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
+
+// Data sanitization against NoSQL query injuction
+app.use(mongoSanitize());
+
+// Data sanitization against XSS
+app.use(xss());
 
 // Routes
 app.use("/api/v1/auth", authRouter);
