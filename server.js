@@ -6,7 +6,7 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import mongoSanitize from "express-mongo-sanitize";
-import xss from "xss-clean";
+import sanitizeHtml from "sanitize-html";
 
 import "./config/connect.js"; // Connect with db
 import ApiError from "./utils/apiError.js";
@@ -38,10 +38,38 @@ app.use(cookieParser());
 app.use(express.json());
 
 // Data sanitization against NoSQL query injuction
-app.use(mongoSanitize());
+app.use((req, res, next) => {
+  if (req.body) {
+    req.body = mongoSanitize.sanitize(req.body);
+  }
+  if (req.params) {
+    req.params = mongoSanitize.sanitize(req.params);
+  }
+  // skip req.query if it's read-only
+  next();
+});
 
-// Data sanitization against XSS
-app.use(xss());
+// Custom XSS sanitization middleware
+app.use((req, res, next) => {
+  const sanitizeObject = (obj) => {
+    for (const key in obj) {
+      if (typeof obj[key] === "string") {
+        obj[key] = sanitizeHtml(obj[key], {
+          allowedTags: [],
+          allowedAttributes: {},
+        });
+      } else if (typeof obj[key] === "object" && obj[key] !== null) {
+        sanitizeObject(obj[key]);
+      }
+    }
+  };
+
+  if (req.body) sanitizeObject(req.body);
+  if (req.params) sanitizeObject(req.params);
+  if (req.query && typeof req.query === "object") sanitizeObject(req.query);
+
+  next();
+});
 
 // Routes
 app.use("/api/v1/auth", authRouter);
