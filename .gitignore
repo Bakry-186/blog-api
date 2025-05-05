@@ -1,7 +1,2 @@
 node_modules
 .env
-# apiFeatures.js
-# factoryHandler.js
-adminCtrl.js
-authCtrl.js
-userCtrl.js
