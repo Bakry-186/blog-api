@@ -17,7 +17,12 @@ import {
   deleteUserValidator,
 } from "../utils/validators/adminValidator.js";
 
+import verifyToken from "../middlewares/authMiddleware.js";
+import authorizeRoles from "../middlewares/roleMiddleware.js";
+
 const router = express.Router();
+
+router.use(verifyToken, authorizeRoles("admin"));
 
 router.route("/").get(getUsers).post(createUserValidator, createUser);
 
