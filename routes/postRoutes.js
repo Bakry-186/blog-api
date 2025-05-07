@@ -23,8 +23,11 @@ import {
 
 import verifyToken from "../middlewares/authMiddleware.js";
 import authorizeRoles from "../middlewares/roleMiddleware.js";
+import commentRouter from "./commentRoutes.js";
 
 const router = express.Router();
+
+router.use("/:postId/comments", commentRouter);
 
 router
   .route("/")
@@ -47,9 +50,10 @@ router
     deletePost
   );
 
-router.post("/:id/add-like", verifyToken, postIdValidator, createLike);
-router.delete("/:id/delete-like", verifyToken, postIdValidator, deleteLike);
-router.post("/:id/add-unlike", verifyToken, postIdValidator, createUnLike);
-router.delete("/:id/delete-unlike", verifyToken, postIdValidator, deleteUnLike);
+router.post("/:id/like", verifyToken, postIdValidator, createLike);
+router.delete("/:id/like", verifyToken, postIdValidator, deleteLike);
+
+router.post("/:id/unlike", verifyToken, postIdValidator, createUnLike);
+router.delete("/:id/unlike", verifyToken, postIdValidator, deleteUnLike);
 
 export default router;

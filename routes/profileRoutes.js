@@ -7,6 +7,9 @@ import {
   deleteMyProfile,
 } from "../controllers/profileCtrl.js";
 
+import { getComments } from "../controllers/commentCtrl.js";
+import { getPosts } from "../controllers/postCtrl.js";
+
 import {
   updateProfileValidator,
   changePasswordValidator,
@@ -15,24 +18,37 @@ import {
 import { getUser } from "../controllers/adminCtrl.js";
 
 import verifyToken from "../middlewares/authMiddleware.js";
+import authorizeRoles from "../middlewares/roleMiddleware.js";
+import createFilterObj from "../middlewares/filterMiddleware.js";
 
 const router = express.Router();
 
-router.get("/get-my-profile", verifyToken, getMyProfile, getUser);
+router
+  .route("/me")
+  .get(verifyToken, getMyProfile, getUser)
+  .put(verifyToken, updateProfileValidator, updateMyProfile)
+  .delete(verifyToken, deleteMyProfile);
 
 router.put(
-  "/update-my-profile",
-  verifyToken,
-  updateProfileValidator,
-  updateMyProfile
-);
-router.put(
-  "/change-my-password",
+  "/change-password",
   verifyToken,
   changePasswordValidator,
   changeMyPassword
 );
 
-router.delete("/delete-my-profile", verifyToken, deleteMyProfile);
+router.get(
+  "/me/posts",
+  verifyToken,
+  authorizeRoles("author"),
+  createFilterObj({ authorField: true }),
+  getPosts
+);
+
+router.get(
+  "/me/comments",
+  verifyToken,
+  createFilterObj({ userField: true }),
+  getComments
+);
 
 export default router;
