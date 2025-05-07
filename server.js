@@ -15,6 +15,7 @@ import authRouter from "./routes/authRoutes.js";
 import adminRouter from "./routes/adminRoutes.js";
 import profileRouter from "./routes/profileRoutes.js";
 import postRouter from "./routes/postRoutes.js";
+import commentRouter from "./routes/commentRoutes.js";
 
 // express app
 const app = express();
@@ -77,6 +78,7 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", adminRouter);
 app.use("/api/v1/profiles", profileRouter);
 app.use("/api/v1/posts", postRouter);
+app.use("/api/v1/comments", commentRouter);
 
 app.use(/.*/, (req, res, next) => {
   next(new ApiError(`Can't find this route ${req.originalUrl}`, 404));
