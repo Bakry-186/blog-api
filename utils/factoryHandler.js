@@ -49,13 +49,13 @@ export const getOne = (Model) =>
 
 export const getAll = (Model, modelName = "") =>
   asyncHandler(async (req, res) => {
-    let filterObj = {};
-    if (req.filterObject) {
-      filterObj = req.filterObject;
+    let filterObject = {};
+    if (req.filterObj) {
+      filterObject = req.filterObj;
     }
     const countDocuments = await Model.countDocuments();
     const apiFeatures = new ApiFeatures(
-      Model.find(filterObj),
+      Model.find(filterObject),
       qs.parse(req._parsedUrl.query)
     )
       .filter()
