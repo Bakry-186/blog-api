@@ -22,7 +22,6 @@ import {
 } from "../utils/validators/postValidator.js";
 
 import verifyToken from "../middlewares/authMiddleware.js";
-import authorizeRoles from "../middlewares/roleMiddleware.js";
 import commentRouter from "./commentRoutes.js";
 
 const router = express.Router();
@@ -40,7 +39,7 @@ router.use("/:postId/comments", commentRouter);
  * @swagger
  * /posts:
  *   get:
- *     summary: Get all posts
+ *     summary: Get all posts (public)
  *     tags: [Posts]
  *     parameters:
  *       - in: query
@@ -53,6 +52,11 @@ router.use("/:postId/comments", commentRouter);
  *         schema:
  *           type: integer
  *           example: 10
+ *       - in: query
+ *         name: keyword
+ *         schema:
+ *           type: string
+ *           example: nodejs
  *     responses:
  *       200:
  *         description: List of all posts
@@ -61,20 +65,19 @@ router.use("/:postId/comments", commentRouter);
  *             schema:
  *               type: object
  *               properties:
- *                 status:
- *                   type: string
- *                   example: success
- *                 results:
+ *                 result:
  *                   type: integer
+ *                 paginationResult:
+ *                   type: object
  *                 data:
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Post'
  *   post:
- *     summary: Create a new post (Author only)
+ *     summary: Create a new post (requires login)
  *     tags: [Posts]
  *     security:
- *       - cookieAuth: []
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -88,7 +91,7 @@ router.use("/:postId/comments", commentRouter);
  *                 example: My New Post
  *               content:
  *                 type: string
- *                 example: This is the post content.
+ *                 example: This is the post content, at least 10 chars.
  *     responses:
  *       201:
  *         description: Post created successfully
@@ -97,26 +100,21 @@ router.use("/:postId/comments", commentRouter);
  *             schema:
  *               type: object
  *               properties:
- *                 status:
- *                   type: string
- *                   example: success
  *                 data:
  *                   $ref: '#/components/schemas/Post'
  *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden – Author role required
+ *         description: Unauthorized – must be logged in
  */
 router
   .route("/")
   .get(getPosts)
-  .post(verifyToken, authorizeRoles("author"), createPostValidator, createPost);
+  .post(verifyToken, createPostValidator, createPost);
 
 /**
  * @swagger
  * /posts/{id}:
  *   get:
- *     summary: Get a specific post (increments view count)
+ *     summary: Get a specific post by ID (increments view count)
  *     tags: [Posts]
  *     parameters:
  *       - in: path
@@ -133,18 +131,15 @@ router
  *             schema:
  *               type: object
  *               properties:
- *                 status:
- *                   type: string
- *                   example: success
  *                 data:
  *                   $ref: '#/components/schemas/Post'
  *       404:
  *         description: Post not found
  *   put:
- *     summary: Update a post (Admin or Author)
+ *     summary: Update a post (owner only)
  *     tags: [Posts]
  *     security:
- *       - cookieAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -163,21 +158,21 @@ router
  *                 example: Updated Post Title
  *               content:
  *                 type: string
- *                 example: Updated content.
+ *                 example: Updated content here.
  *     responses:
  *       200:
  *         description: Post updated successfully
  *       401:
  *         description: Unauthorized
  *       403:
- *         description: Forbidden
+ *         description: Forbidden – not the post owner
  *       404:
  *         description: Post not found
  *   delete:
- *     summary: Delete a post (Admin or Author)
+ *     summary: Delete a post (owner only)
  *     tags: [Posts]
  *     security:
- *       - cookieAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -186,30 +181,20 @@ router
  *           type: string
  *         example: 664f1a2b3c4d5e6f7a8b9c0d
  *     responses:
- *       204:
- *         description: Post deleted
+ *       200:
+ *         description: Post deleted successfully
  *       401:
  *         description: Unauthorized
  *       403:
- *         description: Forbidden
+ *         description: Forbidden – not the post owner
  *       404:
  *         description: Post not found
  */
 router
   .route("/:id")
   .get(getPostValidator, increaseViews, getPost)
-  .put(
-    verifyToken,
-    authorizeRoles("admin", "author"),
-    updatePostValidator,
-    updatePost
-  )
-  .delete(
-    verifyToken,
-    authorizeRoles("admin", "author"),
-    deletePostValidator,
-    deletePost
-  );
+  .put(verifyToken, updatePostValidator, updatePost)
+  .delete(verifyToken, deletePostValidator, deletePost);
 
 /**
  * @swagger
@@ -218,7 +203,7 @@ router
  *     summary: Like a post
  *     tags: [Posts]
  *     security:
- *       - cookieAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -237,7 +222,7 @@ router
  *     summary: Remove like from a post
  *     tags: [Posts]
  *     security:
- *       - cookieAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -263,7 +248,7 @@ router.delete("/:id/like", verifyToken, postIdValidator, deleteLike);
  *     summary: Unlike a post
  *     tags: [Posts]
  *     security:
- *       - cookieAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -282,7 +267,7 @@ router.delete("/:id/like", verifyToken, postIdValidator, deleteLike);
  *     summary: Remove unlike from a post
  *     tags: [Posts]
  *     security:
- *       - cookieAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
