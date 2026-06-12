@@ -4,23 +4,35 @@ const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Blog API",
+      title: "Personal Blogging Platform API",
       version: "1.0.0",
       description:
-        "A full-fledged RESTful API for a blog platform with authentication, authorization, posts, comments, and user management.",
+        "A RESTful API for a Personal Blogging Platform. Supports user registration/login with JWT, full CRUD for blog posts with ownership enforcement, comments, likes, and user profiles.\n\n**How to authenticate:**\n1. Call `POST /auth/register` or `POST /auth/login`\n2. Copy the `token` value from the response\n3. Click the **Authorize** button above and enter: `Bearer <your_token>`",
+      contact: {
+        name: "Blog API Support",
+      },
+      license: {
+        name: "MIT",
+      },
     },
     servers: [
       {
         url: "http://localhost:3000/api/v1",
-        description: "Development server",
+        description: "Local development server",
       },
     ],
     components: {
       securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+          description: "Enter the JWT token returned from /auth/login or /auth/register",
+        },
         cookieAuth: {
           type: "apiKey",
           in: "cookie",
-          name: "token",
+          name: "Authorization",
         },
       },
       schemas: {
