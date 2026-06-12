@@ -17,6 +17,10 @@ const options = {
     },
     servers: [
       {
+        url: "https://blog-api-production-120d.up.railway.app/api/v1",
+        description: "Production server (Railway)",
+      },
+      {
         url: "http://localhost:3000/api/v1",
         description: "Local development server",
       },

@@ -299,6 +299,12 @@ All validation errors return **HTTP 400** with a JSON array of error messages.
 
 Interactive Swagger UI is available once the server is running:
 
+**Live (Production):**
+```
+https://blog-api-production-120d.up.railway.app/api-docs
+```
+
+**Local:**
 ```
 http://localhost:3000/api-docs
 ```
