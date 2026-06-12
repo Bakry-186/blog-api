@@ -1,19 +1,47 @@
 import asyncHandler from "express-async-handler";
 import {
   createOne,
-  getAll,
-  getOne,
   updateOne,
   deleteOne,
 } from "../utils/factoryHandler.js";
 import Post from "../models/postModel.js";
 import ApiError from "../utils/apiError.js";
+import ApiFeatures from "../utils/apiFeatures.js";
+import qs from "qs";
 
 export const createPost = createOne(Post);
-export const getPosts = getAll(Post);
-export const getPost = getOne(Post);
 export const updatePost = updateOne(Post);
 export const deletePost = deleteOne(Post);
+
+export const getPosts = asyncHandler(async (req, res) => {
+  let filterObject = {};
+  if (req.filterObj) filterObject = req.filterObj;
+
+  const countDocuments = await Post.countDocuments(filterObject);
+  const apiFeatures = new ApiFeatures(
+    Post.find(filterObject).populate("author", "name email"),
+    qs.parse(req._parsedUrl.query)
+  )
+    .filter()
+    .search("posts")
+    .sort()
+    .limitFields()
+    .paginate(countDocuments);
+
+  const { mongooseQuery, paginationResult } = apiFeatures;
+  const docs = await mongooseQuery;
+
+  res.status(200).json({ result: docs.length, paginationResult, data: docs });
+});
+
+export const getPost = asyncHandler(async (req, res, next) => {
+  const doc = await Post.findById(req.params.id).populate(
+    "author",
+    "name email"
+  );
+  if (!doc) return next(new ApiError("Document not found!", 404));
+  res.status(200).json({ data: doc });
+});
 
 export const increaseViews = asyncHandler(async (req, res, next) => {
   const post = await Post.findById(req.params.id);
