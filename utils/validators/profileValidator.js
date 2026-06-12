@@ -27,8 +27,8 @@ export const changePasswordValidator = [
   body("password")
     .notEmpty()
     .withMessage("Password is required")
-    .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters long")
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters long")
     .custom(async (password, { req }) => {
       const user = await User.findById(req.user._id);
       if (!user) {

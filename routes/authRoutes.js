@@ -28,7 +28,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /auth/signup:
+ * /auth/register:
  *   post:
  *     summary: Register a new user
  *     tags: [Auth]
@@ -63,9 +63,6 @@ const router = express.Router();
  *             schema:
  *               type: object
  *               properties:
- *                 status:
- *                   type: string
- *                   example: success
  *                 data:
  *                   $ref: '#/components/schemas/User'
  *       400:
@@ -75,6 +72,7 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
+router.post("/register", signupValidator, signup);
 router.post("/signup", signupValidator, signup);
 
 /**
@@ -101,15 +99,16 @@ router.post("/signup", signupValidator, signup);
  *                 example: "Password123!"
  *     responses:
  *       200:
- *         description: Login successful, JWT set in cookie
+ *         description: Login successful – JWT returned in response body and set in cookie
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 status:
+ *                 token:
  *                   type: string
- *                   example: success
+ *                   description: JWT access token – use as "Bearer <token>" in Authorization header
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *                 data:
  *                   $ref: '#/components/schemas/User'
  *       401:
@@ -128,7 +127,7 @@ router.post("/login", loginValidator, login);
  *     summary: Logout the current user
  *     tags: [Auth]
  *     security:
- *       - cookieAuth: []
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Logged out successfully

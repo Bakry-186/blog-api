@@ -5,9 +5,11 @@ import User from "../models/userModel.js";
 
 const verifyToken = async (req, res, next) => {
   // Check if token exist
-  const token =
-    req.headers.authorization.split(" ")[1] ||
-    req.cookies.Authorization.split(" ")[1];
+  const authHeader = req.headers.authorization || req.cookies?.Authorization;
+  if (!authHeader) {
+    return next(new ApiError("No access token!", 401));
+  }
+  const token = authHeader.split(" ")[1];
   if (!token) {
     return next(new ApiError("No access token!", 401));
   }

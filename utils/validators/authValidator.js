@@ -34,8 +34,8 @@ export const signupValidator = [
     .withMessage("Password must be a string.")
     .notEmpty()
     .withMessage("Password is required.")
-    .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters long.")
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters long.")
     .custom((password, { req }) => {
       if (password !== req.body.passwordConfirm) {
         throw new Error("Password confirmation is not correct.");
@@ -62,8 +62,8 @@ export const loginValidator = [
     .withMessage("Password must be a string.")
     .notEmpty()
     .withMessage("Password is required.")
-    .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters long."),
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters long."),
 
   validatorMiddleware,
 ];
@@ -102,8 +102,8 @@ export const resetPasswordValidator = [
     .withMessage("Password must be a string.")
     .notEmpty()
     .withMessage("Password is required.")
-    .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters long.")
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters long.")
     .custom((password, { req }) => {
       if (password !== req.body.passwordConfirm) {
         throw new Error("Password confirmation is not correct!");
