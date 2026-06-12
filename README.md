@@ -1,173 +1,337 @@
-# Blog API
+# Personal Blogging Platform API
 
-A full-fledged API for a blog platform built with **Node.js** and **Express.js**, featuring authentication, authorization, CRUD operations for posts and comments, user profiles, and various security measures.
+A robust RESTful API for a Personal Blogging Platform built with **Node.js**, **Express.js**, and **MongoDB**. The API supports user registration, JWT-based authentication, full CRUD operations for blog posts with ownership enforcement, comments, likes, and user profile management.
 
 ---
 
 ## Table of Contents
 
+- [Database Choice](#database-choice)
 - [Features](#features)
-- [Technologies](#technologies)
-- [Installation](#installation)
-- [API Documentation](#api-documentation)
-- [Routes](#routes)
-  - [Authentication Routes](#authentication-routes)
-  - [User Routes](#user-routes)
-  - [Profile Routes](#profile-routes)
-  - [Post Routes](#post-routes)
-  - [Comment Routes](#comment-routes)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Local Setup](#local-setup)
+- [Environment Variables](#environment-variables)
+- [API Endpoints](#api-endpoints)
+  - [Authentication](#authentication-routes)
+  - [Posts](#post-routes)
+  - [Comments](#comment-routes)
+  - [Profile](#profile-routes)
+  - [Admin](#admin-routes)
+- [Authentication Flow](#authentication-flow)
+- [Validation Rules](#validation-rules)
 - [Security Measures](#security-measures)
-- [Error Handling](#error-handling)
-- [License](#license)
+- [API Documentation](#api-documentation)
+
+---
+
+## Database Choice
+
+**MongoDB** (via Mongoose) was chosen for the following reasons:
+
+- **Flexible schema**: Blog posts and comments naturally vary in structure; MongoDB's document model accommodates this without rigid migrations.
+- **JSON-native storage**: Blog content is already JSON-shaped, so there is zero impedance mismatch between the API layer and the database.
+- **Scalability**: MongoDB scales horizontally with ease, which is important for a content platform that can grow rapidly.
+- **Rich querying**: Mongoose provides a powerful query API with full-text search, pagination, filtering, and population (joins) out of the box.
+- **Managed hosting**: MongoDB Atlas provides free-tier cloud hosting, making zero-config deployment straightforward.
+
+**Schema relationships:**
+
+| Entity | Fields |
+|--------|--------|
+| `User` | `_id`, `name`, `email`, `password` (hashed), `role`, `createdAt`, `updatedAt` |
+| `Post` | `_id`, `title`, `slug`, `content`, `author` (ref → User), `views`, `likes`, `createdAt`, `updatedAt` |
+| `Comment` | `_id`, `content`, `post` (ref → Post), `user` (ref → User), `createdAt`, `updatedAt` |
+
+A **One-to-Many** relationship exists between `User` and `Post`: one user can author many posts.
 
 ---
 
 ## Features
 
-- **User Authentication**: JWT authentication, signup, login, logout, password reset.
-- **Role-Based Authorization**: Admin and Author roles for controlling access.
-- **CRUD Operations for Posts**: Create, read, update, and delete blog posts.
-- **CRUD Operations for Comments**: Create, read, update, and delete comments on posts.
-- **Profile Management**: Users can view, update, and delete their profiles.
-- **Security**: Protection against XSS, NoSQL injection, and rate-limiting.
+- **JWT Authentication**: Signup, login, logout, and password reset via email OTP.
+- **Ownership-based Authorization**: Users can only update or delete their own posts/comments.
+- **Full Post CRUD**: Create, list, view, update, and delete blog posts.
+- **Comment System**: Nested comments per post.
+- **Like / Unlike**: Toggle likes and dislikes on posts.
+- **Profile Management**: Users can view, update, and delete their own profile.
+- **Admin Panel**: Admins can manage all users.
+- **Pagination, Filtering & Search**: Query posts with `?page`, `?limit`, `?keyword`, `?sort`.
+- **Swagger UI**: Interactive API docs at `/api-docs`.
 
 ---
 
-## Technologies
+## Tech Stack
 
-- **Node.js**: Runtime environment for building server-side applications.
-- **Express.js**: Web framework for handling routes and middleware.
-- **MongoDB**: NoSQL database for storing user and post data.
-- **JWT (JSON Web Tokens)**: Used for authenticating users.
-- **Mongoose**: ODM for MongoDB.
-- **Helmet**: Middleware to secure HTTP headers.
-- **Cors**: Middleware to handle cross-origin requests.
-- **Rate Limit**: Middleware for limiting the number of requests from a user.
-- **Mongo Sanitize**: Prevents NoSQL injection.
-- **Sanitize HTML**: Protects against XSS attacks.
-- **Swagger (OpenAPI 3.0)**: Interactive API documentation via `swagger-jsdoc` and `swagger-ui-express`.
-
----
-
-## Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Bakry-186/blog-api.git
-   cd blog-api
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create a `.env` file and set your environment variables:
-   ```bash
-   PORT=3000
-   NODE_ENV=development
-   MONGO_URL=mongodb+srv://<username>:<password>@your-cluster.mongodb.net/blog
-   JWT_SECRET_ACCESS_KEY=<your_jwt_secret_key>
-   NODE_CODE_SENDING_EMAIL_ADDRESS=<your_email@example.com>
-   NODE_CODE_SENDING_EMAIL_PASSWORD=<your_app_password>
-   ```
-
-4. Start the server:
-   ```bash
-   # Development (auto-restart on changes)
-   npm run dev
-
-   # Production
-   npm start
-   ```
+| Layer | Technology |
+|-------|-----------|
+| Runtime | Node.js (ESM) |
+| Framework | Express.js v5 |
+| Database | MongoDB (Mongoose ODM) |
+| Auth | JSON Web Tokens (`jsonwebtoken`) |
+| Password Hashing | `bcrypt` |
+| Validation | `express-validator` |
+| API Docs | `swagger-jsdoc` + `swagger-ui-express` |
+| Security | `helmet`, `express-rate-limit`, `express-mongo-sanitize`, `sanitize-html` |
+| Email | `nodemailer` |
 
 ---
 
-## API Documentation
-
-This project includes interactive API documentation powered by **Swagger UI** (OpenAPI 3.0).
-
-Once the server is running, open your browser and navigate to:
+## Project Structure
 
 ```
-http://localhost:3000/api-docs
+blog-api/
+├── config/
+│   ├── connect.js          # MongoDB connection
+│   └── swagger.js          # OpenAPI spec configuration
+├── controllers/
+│   ├── authCtrl.js         # Register, login, logout, password reset
+│   ├── postCtrl.js         # Post CRUD + likes
+│   ├── commentCtrl.js      # Comment CRUD
+│   ├── profileCtrl.js      # My profile operations
+│   └── adminCtrl.js        # Admin user management
+├── middlewares/
+│   ├── authMiddleware.js   # JWT verification
+│   ├── roleMiddleware.js   # Role-based access control
+│   ├── errorMiddleware.js  # Global error handler
+│   ├── filterMiddleware.js # Query filter injection
+│   └── validatorMiddleware.js # express-validator error collector
+├── models/
+│   ├── userModel.js        # User schema (bcrypt pre-save hook)
+│   ├── postModel.js        # Post schema (author ref → User)
+│   └── commentModel.js     # Comment schema
+├── routes/
+│   ├── authRoutes.js
+│   ├── postRoutes.js
+│   ├── commentRoutes.js
+│   ├── profileRoutes.js
+│   └── adminRoutes.js
+├── utils/
+│   ├── apiError.js         # Custom error class
+│   ├── apiFeatures.js      # Pagination, filtering, sorting
+│   ├── factoryHandler.js   # Generic CRUD factory
+│   ├── generateTokens.js   # JWT creation + cookie setter
+│   ├── generateResetCode.js
+│   ├── sendEmail.js
+│   ├── emailTemplates.js
+│   └── validators/
+│       ├── authValidator.js
+│       ├── postValidator.js
+│       ├── commentValidator.js
+│       ├── profileValidator.js
+│       └── adminValidator.js
+├── .env                    # Environment variables (not committed)
+├── .gitignore
+├── package.json
+└── server.js               # Entry point
 ```
-
-The Swagger UI lets you:
-- Browse all available endpoints grouped by tag (Auth, Posts, Comments, etc.)
-- View request body schemas, path/query parameters, and response shapes
-- Authenticate using the cookie-based JWT and test protected endpoints directly
-
-The OpenAPI spec is auto-generated from JSDoc `@swagger` annotations in the route files, using [`swagger-jsdoc`](https://github.com/Surnet/swagger-jsdoc). The UI is served by [`swagger-ui-express`](https://github.com/scottie1984/swagger-ui-express).
 
 ---
 
-## Routes
+## Local Setup
+
+### Prerequisites
+
+- Node.js ≥ 18
+- A MongoDB connection string (free [MongoDB Atlas](https://cloud.mongodb.com) cluster works)
+- An email account for password reset emails (e.g. Gmail App Password)
+
+### Steps
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Bakry-186/blog-api.git
+cd blog-api
+
+# 2. Install dependencies
+npm install
+
+# 3. Create .env file (see Environment Variables section below)
+cp .env.example .env   # then edit .env with your values
+
+# 4. Start the development server (auto-restarts on file changes)
+npm run dev
+
+# 5. OR start in production mode
+npm start
+```
+
+The server will start on `http://localhost:3000`.  
+Swagger UI is available at `http://localhost:3000/api-docs`.
+
+---
+
+## Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+PORT=3000
+NODE_ENV=development
+
+# MongoDB connection string
+MONGO_URL=mongodb+srv://<username>:<password>@cluster0.example.mongodb.net/blog
+
+# JWT secret (use a long random string in production)
+JWT_SECRET_ACCESS_KEY=your_super_secret_jwt_key_here
+
+# Email credentials for password reset (Gmail example)
+NODE_CODE_SENDING_EMAIL_ADDRESS=yourname@gmail.com
+NODE_CODE_SENDING_EMAIL_PASSWORD=your_gmail_app_password
+```
+
+> **Note:** Never commit your `.env` file. It is already listed in `.gitignore`.
+
+---
+
+## API Endpoints
+
+Base URL: `http://localhost:3000/api/v1`
 
 ### Authentication Routes
 
-- **POST** `/api/v1/auth/signup`: User registration
-- **POST** `/api/v1/auth/login`: User login
-- **POST** `/api/v1/auth/logout`: Logout the user
-- **POST** `/api/v1/auth/forgot-password`: Request password reset
-- **POST** `/api/v1/auth/verify-reset-code`: Verify reset password code
-- **PUT** `/api/v1/auth/reset-password`: Reset user password
-
-### User Routes
-
-- **GET** `/api/v1/users`: Get all users (Admin only)
-- **POST** `/api/v1/users`: Create a new user (Admin only)
-- **GET** `/api/v1/users/:id`: Get specific user details (Admin only)
-- **PUT** `/api/v1/users/:id`: Update user details (Admin only)
-- **DELETE** `/api/v1/users/:id`: Delete a user (Admin only)
-- **PUT** `/api/v1/users/change-password/:id`: Change user password (Admin only)
-
-### Profile Routes
-
-- **GET** `/api/v1/profiles/me`: Get current user's profile
-- **PUT** `/api/v1/profiles/me`: Update current user's profile
-- **DELETE** `/api/v1/profiles/me`: Delete current user's profile
-- **PUT** `/api/v1/profiles/me/change-password`: Change current user's password
-- **GET** `/api/v1/profiles/me/posts`: Get posts created by the current user (Author role)
-- **GET** `/api/v1/profiles/me/comments`: Get comments made by the current user
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| `POST` | `/auth/register` | Public | Register a new user |
+| `POST` | `/auth/login` | Public | Login and receive JWT |
+| `POST` | `/auth/logout` | Public | Clear auth cookie |
+| `POST` | `/auth/forgot-password` | Public | Send 6-digit reset code to email |
+| `POST` | `/auth/verify-reset-code` | Public | Verify the reset code |
+| `PUT` | `/auth/reset-password` | Public | Reset password with verified code |
 
 ### Post Routes
 
-- **GET** `/api/v1/posts`: Get all posts
-- **POST** `/api/v1/posts`: Create a new post (Author role)
-- **GET** `/api/v1/posts/:id`: Get a specific post and increase views
-- **PUT** `/api/v1/posts/:id`: Update a specific post (Admin or Author)
-- **DELETE** `/api/v1/posts/:id`: Delete a specific post (Admin or Author)
-- **POST** `/api/v1/posts/:id/like`: Like a post
-- **DELETE** `/api/v1/posts/:id/like`: Remove like from post
-- **POST** `/api/v1/posts/:id/unlike`: Unlike a post
-- **DELETE** `/api/v1/posts/:id/unlike`: Remove unlike from post
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| `GET` | `/posts` | **Public** | List all posts (paginated, filterable) |
+| `POST` | `/posts` | **Private** | Create a new post (linked to logged-in user) |
+| `GET` | `/posts/:id` | **Public** | Get a single post (increments view count) |
+| `PUT` | `/posts/:id` | **Private (owner)** | Update a post (only if user is the author) |
+| `DELETE` | `/posts/:id` | **Private (owner)** | Delete a post (only if user is the author) |
+| `POST` | `/posts/:id/like` | **Private** | Like a post |
+| `DELETE` | `/posts/:id/like` | **Private** | Remove like from a post |
+| `POST` | `/posts/:id/unlike` | **Private** | Unlike a post |
+| `DELETE` | `/posts/:id/unlike` | **Private** | Remove unlike from a post |
+
+**Query parameters for `GET /posts`:**
+
+| Param | Type | Example | Description |
+|-------|------|---------|-------------|
+| `page` | integer | `?page=2` | Page number (default: 1) |
+| `limit` | integer | `?limit=5` | Items per page (default: 10) |
+| `keyword` | string | `?keyword=node` | Full-text search in title and content |
+| `sort` | string | `?sort=-createdAt` | Sort field (prefix `-` for descending) |
 
 ### Comment Routes
 
-- **GET** `/api/v1/posts/:postId/comments`: Get all comments for specific post
-- **POST** `/api/v1/posts/:postId/comments`: Create a new comment for specific post
-- **PUT** `/api/v1/comments/:id`: Update a specific comment
-- **DELETE** `/api/v1/comments/:id`: Delete a specific comment
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| `GET` | `/posts/:postId/comments` | **Public** | List all comments for a post |
+| `POST` | `/posts/:postId/comments` | **Private** | Create a comment on a post |
+| `PUT` | `/comments/:id` | **Private (owner)** | Update a comment |
+| `DELETE` | `/comments/:id` | **Private (owner)** | Delete a comment |
+
+### Profile Routes
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| `GET` | `/profiles/me` | **Private** | Get current user's profile |
+| `PUT` | `/profiles/me` | **Private** | Update current user's profile |
+| `DELETE` | `/profiles/me` | **Private** | Delete current user's account |
+| `PUT` | `/profiles/change-password` | **Private** | Change current user's password |
+| `GET` | `/profiles/me/posts` | **Private** | Get posts created by the current user |
+| `GET` | `/profiles/me/comments` | **Private** | Get comments made by the current user |
+
+### Admin Routes
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| `GET` | `/users` | **Admin** | List all users |
+| `POST` | `/users` | **Admin** | Create a user |
+| `GET` | `/users/:id` | **Admin** | Get a specific user |
+| `PUT` | `/users/:id` | **Admin** | Update a user |
+| `DELETE` | `/users/:id` | **Admin** | Delete a user |
+| `PUT` | `/users/change-password/:id` | **Admin** | Change a user's password |
+
+---
+
+## Authentication Flow
+
+1. **Register**: `POST /api/v1/auth/register` with `{ name, email, password, passwordConfirm }`
+2. **Login**: `POST /api/v1/auth/login` with `{ email, password }` → response includes a `token` field
+3. **Use the token**: Add `Authorization: Bearer <token>` header to all protected requests
+4. **Token expiry**: Tokens expire after **7 days**
+
+---
+
+## Validation Rules
+
+| Field | Rule |
+|-------|------|
+| `name` | Required, string, 2–32 characters |
+| `email` | Required, valid email format, must be unique |
+| `password` | Required, string, **minimum 8 characters** |
+| `passwordConfirm` | Must match `password` |
+| `post.title` | Required, minimum 3 characters |
+| `post.content` | Required, minimum 10 characters |
+| `comment.content` | Required, minimum 1 character |
+
+All validation errors return **HTTP 400** with a JSON array of error messages.
 
 ---
 
 ## Security Measures
 
-- **Helmet**: Adds security headers to the application to protect against common vulnerabilities.
-- **Rate Limiting**: Protects the API from being overwhelmed by too many requests.
-- **Data Sanitization**: Ensures that input from users (e.g., `req.body`, `req.params`, `req.query`) is cleaned to prevent NoSQL injection attacks.
-- **XSS Protection**: Ensures that user input is sanitized to avoid cross-site scripting (XSS) attacks.
-- **JWT Authentication**: Used for securing routes and authenticating users.
-- **Role-Based Access Control**: Only authorized users (Admin/Author) can perform specific actions (e.g., create, update, delete posts).
-- **Input Validation**: Uses custom validators (via express-validator) to ensure that incoming data (e.g., email, password, post content) meets the expected format and constraints before processing.
+| Measure | Implementation |
+|---------|---------------|
+| Password hashing | `bcrypt` with salt rounds = 10 (pre-save hook on User model) |
+| JWT auth | `jsonwebtoken` — token in response body + `HttpOnly` cookie |
+| Rate limiting | `express-rate-limit` — 100 requests/hour per IP on `/api/*` |
+| Security headers | `helmet` |
+| NoSQL injection | `express-mongo-sanitize` sanitizes `req.body` and `req.params` |
+| XSS protection | `sanitize-html` strips all HTML tags from string inputs |
+| Ownership checks | Update/delete validates that `post.author === req.user._id` |
+| `.env` secrets | Sensitive config kept out of source control via `.gitignore` |
+
+---
+
+## API Documentation
+
+Interactive Swagger UI is available once the server is running:
+
+```
+http://localhost:3000/api-docs
+```
+
+**To test protected endpoints in Swagger UI:**
+1. Call `POST /auth/login` and copy the `token` from the response
+2. Click the **Authorize** 🔒 button at the top of the Swagger page
+3. Enter `Bearer <your_token>` in the `bearerAuth` field
+4. All subsequent requests will include the token automatically
+
+The spec is auto-generated from JSDoc `@swagger` annotations in the route files using `swagger-jsdoc`.
 
 ---
 
 ## Error Handling
 
-- **Custom API Error**: All errors are handled through a custom `ApiError` class.
-- **Global Error Middleware**: Handles errors globally by catching any unhandled exceptions and sending a standardized error response.
+All errors are handled through a global Express error middleware and return consistent JSON:
+
+```json
+{
+  "status": "fail",
+  "message": "Descriptive error message here"
+}
+```
+
+| Status Code | Meaning |
+|-------------|---------|
+| `400` | Bad Request – validation failed |
+| `401` | Unauthorized – no/invalid/expired token |
+| `403` | Forbidden – authenticated but not the resource owner |
+| `404` | Not Found – resource does not exist |
+| `429` | Too Many Requests – rate limit exceeded |
+| `500` | Internal Server Error |
 
 ---
 
