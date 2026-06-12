@@ -7,8 +7,10 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import mongoSanitize from "express-mongo-sanitize";
 import sanitizeHtml from "sanitize-html";
+import swaggerUi from "swagger-ui-express";
 
 import "./config/connect.js"; // Connect with db
+import swaggerSpec from "./config/swagger.js";
 import ApiError from "./utils/apiError.js";
 import globalError from "./middlewares/errorMiddleware.js";
 import authRouter from "./routes/authRoutes.js";
@@ -72,6 +74,9 @@ app.use((req, res, next) => {
 
   next();
 });
+
+// Swagger Docs
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Mount Routes
 app.use("/api/v1/auth", authRouter);

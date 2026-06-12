@@ -9,6 +9,7 @@ A full-fledged API for a blog platform built with **Node.js** and **Express.js**
 - [Features](#features)
 - [Technologies](#technologies)
 - [Installation](#installation)
+- [API Documentation](#api-documentation)
 - [Routes](#routes)
   - [Authentication Routes](#authentication-routes)
   - [User Routes](#user-routes)
@@ -44,6 +45,7 @@ A full-fledged API for a blog platform built with **Node.js** and **Express.js**
 - **Rate Limit**: Middleware for limiting the number of requests from a user.
 - **Mongo Sanitize**: Prevents NoSQL injection.
 - **Sanitize HTML**: Protects against XSS attacks.
+- **Swagger (OpenAPI 3.0)**: Interactive API documentation via `swagger-jsdoc` and `swagger-ui-express`.
 
 ---
 
@@ -63,16 +65,40 @@ A full-fledged API for a blog platform built with **Node.js** and **Express.js**
 3. Create a `.env` file and set your environment variables:
    ```bash
    PORT=3000
-   MONGO_URI=<mongodb+srv://<username>:<password>@your-cluster.mongodb.net/blog>
-   JWT_SECRET=<your_jwt_secret_key>
+   NODE_ENV=development
+   MONGO_URL=mongodb+srv://<username>:<password>@your-cluster.mongodb.net/blog
+   JWT_SECRET_ACCESS_KEY=<your_jwt_secret_key>
    NODE_CODE_SENDING_EMAIL_ADDRESS=<your_email@example.com>
    NODE_CODE_SENDING_EMAIL_PASSWORD=<your_app_password>
    ```
 
 4. Start the server:
    ```bash
+   # Development (auto-restart on changes)
+   npm run dev
+
+   # Production
    npm start
    ```
+
+---
+
+## API Documentation
+
+This project includes interactive API documentation powered by **Swagger UI** (OpenAPI 3.0).
+
+Once the server is running, open your browser and navigate to:
+
+```
+http://localhost:3000/api-docs
+```
+
+The Swagger UI lets you:
+- Browse all available endpoints grouped by tag (Auth, Posts, Comments, etc.)
+- View request body schemas, path/query parameters, and response shapes
+- Authenticate using the cookie-based JWT and test protected endpoints directly
+
+The OpenAPI spec is auto-generated from JSDoc `@swagger` annotations in the route files, using [`swagger-jsdoc`](https://github.com/Surnet/swagger-jsdoc). The UI is served by [`swagger-ui-express`](https://github.com/scottie1984/swagger-ui-express).
 
 ---
 
